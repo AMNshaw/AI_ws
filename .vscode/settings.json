@@ -1,0 +1,14 @@
+{
+    "ros.distro": "humble",
+    "editor.formatOnSave": true,
+    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.default.includePath": [
+        "/usr/include/eigen3",
+        "/usr/local/include",
+        "/usr/include",
+        "/home/amnshaw/AI_ws/practice/03_microtorch_cpp/include"
+    ],
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_path": "/usr/bin/clang-format",
+    "C_Cpp.formatting": "clangFormat"
+}
