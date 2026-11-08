@@ -165,5 +165,34 @@ Tensor::SharedPtr Tensor::matmul(const Tensor::SharedPtr& other) {
     return result;
 }
 
+Tensor::SharedPtr Tensor::pow(double exponent) {
+    Tensor::SharedPtr self = shared_from_this();
+    Eigen::MatrixXd result_data = data_.array().pow(exponent);
+
+    auto result =
+        std::make_shared<Tensor>(result_data, this->requiresGrad(), std::make_pair(self, Tensor::WeakPtr()), "pow");
+
+    std::weak_ptr<Tensor> weak_result = result;
+
+    result->setBackwardFn([self, exponent, weak_result]() {
+        auto res_ptr = weak_result.lock();
+        if (!res_ptr)
+            return;
+
+        if (self->requiresGrad()) {
+            Eigen::MatrixXd dx = exponent * self->data().array().pow(exponent - 1).matrix();
+            dx = dx.cwiseProduct(res_ptr->grad());
+            dx = asSameShape(dx, self->data());
+
+            if (self->grad().size() == 0)
+                self->setGrad(dx);
+            else
+                self->setGrad(self->grad() + dx);
+        }
+    });
+
+    return result;
+}
+
 }  // namespace engine
 }  // namespace microtorch_cpp

@@ -25,6 +25,12 @@ public:
         : data_(data), grad_(Eigen::MatrixXd::Zero(data.rows(), data.cols())), requires_grad_(requires_grad),
           parent_(std::move(parent)), op_(std::move(op)) {}
 
+    Tensor(double value,
+           bool requires_grad = false,
+           std::pair<Tensor::WeakPtr, Tensor::WeakPtr> parent = {},
+           std::string op = "")
+        : Tensor(Eigen::MatrixXd::Constant(1, 1, value), requires_grad, std::move(parent), std::move(op)) {}
+
     static Eigen::MatrixXd asSameShape(const Eigen::MatrixXd& grad, const Eigen::MatrixXd& target);
 
     // Accessors
@@ -40,11 +46,32 @@ public:
 
     // operations
     Tensor::SharedPtr add(const Tensor::SharedPtr& other);
+    Tensor::SharedPtr add(double scalar) { return this->add(std::make_shared<Tensor>(scalar, false)); }
     Tensor::SharedPtr mult(const Tensor::SharedPtr& other);
+    Tensor::SharedPtr mult(double scalar) { return this->mult(std::make_shared<Tensor>(scalar, false)); }
+    Tensor::SharedPtr div(const Tensor::SharedPtr& other) { return this->mult(other->pow(-1.0)); }
+    Tensor::SharedPtr div(double scalar) { return this->mult(std::make_shared<Tensor>(scalar, false)->pow(-1.0)); }
     Tensor::SharedPtr matmul(const Tensor::SharedPtr& other);
+    Tensor::SharedPtr pow(double exponent);
 
     Tensor::SharedPtr operator+(const Tensor::SharedPtr& other) { return this->add(other); }
+    Tensor::SharedPtr operator+(double scalar) { return this->add(scalar); }
+    friend Tensor::SharedPtr operator+(double scalar, const Tensor::SharedPtr& tensor) { return tensor->add(scalar); }
+
+    Tensor::SharedPtr operator-(const Tensor::SharedPtr& other) { return this->add(other->mult(-1.0)); }
+    Tensor::SharedPtr operator-(double scalar) { return this->add(-scalar); }
+    friend Tensor::SharedPtr operator-(double scalar, const Tensor::SharedPtr& tensor) { return tensor->add(-scalar); }
+    Tensor::SharedPtr operator-() { return this->mult(-1.0); }
+
     Tensor::SharedPtr operator*(const Tensor::SharedPtr& other) { return this->mult(other); }
+    Tensor::SharedPtr operator*(double scalar) { return this->mult(scalar); }
+    friend Tensor::SharedPtr operator*(double scalar, const Tensor::SharedPtr& tensor) { return tensor->mult(scalar); }
+
+    Tensor::SharedPtr operator/(const Tensor::SharedPtr& other) { return this->div(other); }
+    Tensor::SharedPtr operator/(double scalar) { return this->div(scalar); }
+    friend Tensor::SharedPtr operator/(double scalar, const Tensor::SharedPtr& tensor) {
+        return scalar * tensor->pow(-1.0);
+    }
 
 private:
     Eigen::MatrixXd data_;
